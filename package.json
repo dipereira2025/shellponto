@@ -1,0 +1,9 @@
+{
+  "name": "shell-cafe-gestao-v4",
+  "version": "4.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  }
+}

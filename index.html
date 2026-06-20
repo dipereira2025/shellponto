@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Shell Café Gestão V4</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d71920">
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --yellow:#ffd500;--red:#d71920;--dark:#111827;--bg:#f1f5f9;
+      --green:#16a34a;--blue:#2563eb;--orange:#f59e0b;--border:#e5e7eb;
+      --muted:#64748b;--card:#fff
+    }
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#111827}
+    header{background:linear-gradient(90deg,var(--yellow),#fff7bf);border-bottom:5px solid var(--red);padding:16px}
+    header h1{margin:0;font-size:23px} header p{margin:4px 0 0;color:#334155}
+    main{max-width:1250px;margin:18px auto;padding:0 12px}
+    .card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 4px 18px rgba(0,0,0,.08)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    label{display:block;font-size:13px;font-weight:bold;margin:10px 0 6px}
+    input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;font-size:15px;background:white}
+    textarea{min-height:90px}
+    button{border:0;border-radius:12px;padding:12px 14px;font-weight:bold;cursor:pointer;margin-top:8px}
+    .btn-red{background:var(--red);color:white}.btn-green{background:var(--green);color:white}.btn-blue{background:var(--blue);color:white}.btn-dark{background:var(--dark);color:white}.btn-light{background:#e2e8f0;color:#111827}.btn-orange{background:var(--orange);color:white}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}
+    .status{padding:12px;border-radius:12px;background:#f8fafc;margin-top:12px}.ok{background:#dcfce7;color:#166534}.err{background:#fee2e2;color:#991b1b}.warn{background:#fef9c3;color:#854d0e}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.tabs button.active{background:var(--red);color:white}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}th{background:#f8fafc}
+    .small{font-size:12px;color:var(--muted)}.kpi{background:#f8fafc;border-radius:14px;padding:14px}.kpi strong{font-size:24px;display:block}.badge{display:inline-block;border-radius:999px;padding:4px 8px;background:#e2e8f0;font-size:12px}.danger{color:#b91c1c;font-weight:bold}.good{color:#166534;font-weight:bold}
+    .store-card{border:1px solid #e5e7eb;border-radius:14px;padding:12px;background:#f8fafc}
+    video,img{width:100%;border-radius:14px}.videoBox{background:#020617;border-radius:14px;overflow:hidden;margin-top:10px}
+    .check-item{display:flex;align-items:center;gap:10px;background:#f8fafc;padding:10px;border-radius:12px;margin:8px 0}.check-item input{width:auto}
+    @media(max-width:900px){.grid,.grid3,.grid4{grid-template-columns:1fr}header h1{font-size:20px}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>☕ Shell Café Gestão V4</h1>
+  <p>Ponto + operação 24h + multi-lojas + checklist + ocorrências</p>
+</header>
+
+<main>
+  <section id="configCard" class="card">
+    <h2>Configuração inicial</h2>
+    <div class="grid">
+      <div><label>Supabase URL</label><input id="cfgUrl" placeholder="https://xxxxx.supabase.co"></div>
+      <div><label>Supabase anon key</label><input id="cfgKey" placeholder="eyJ..."></div>
+    </div>
+    <button class="btn-dark" onclick="saveConfig()">Salvar configuração</button>
+    <p class="small">Para criar usuários dentro do sistema, configure também a função da Vercel e a Service Role Key nas variáveis da Vercel.</p>
+  </section>
+
+  <section id="loginCard" class="card">
+    <h2>Entrar</h2>
+    <div class="grid">
+      <div><label>E-mail</label><input id="loginEmail" type="email"></div>
+      <div><label>Senha</label><input id="loginPass" type="password"></div>
+    </div>
+    <button class="btn-red" onclick="login()">Entrar</button>
+    <div id="loginMsg" class="status hidden"></div>
+  </section>
+
+  <section id="appCard" class="hidden">
+    <div class="card">
+      <h2 id="userTitle">Usuário</h2>
+      <p id="userStore" class="small"></p>
+      <button class="btn-dark" onclick="logout()">Sair</button>
+    </div>
+
+    <div class="tabs">
+      <button id="tabDashboard" class="active btn-light" onclick="openTab('dashboard')">Dashboard</button>
+      <button id="tabPonto" class="btn-light" onclick="openTab('ponto')">Ponto</button>
+      <button id="tabMeus" class="btn-light" onclick="openTab('meus')">Meus registros</button>
+      <button id="tabChecklist" class="btn-light" onclick="openTab('checklist')">Checklist</button>
+      <button id="tabOcorrencias" class="btn-light" onclick="openTab('ocorrencias')">Ocorrências</button>
+      <button id="tabRelatorios" class="btn-light adminOnly hidden" onclick="openTab('relatorios')">Relatórios</button>
+      <button id="tabFuncionarios" class="btn-light adminOnly hidden" onclick="openTab('funcionarios')">Funcionários</button>
+      <button id="tabLojas" class="btn-light superOnly hidden" onclick="openTab('lojas')">Lojas</button>
+    </div>
+
+    <section id="dashboard" class="card">
+      <h2>Dashboard operacional</h2>
+      <button class="btn-blue" onclick="loadDashboard()">Atualizar</button>
+      <div class="grid4" style="margin-top:12px">
+        <div class="kpi">Funcionários ativos<strong id="dashEmployees">0</strong></div>
+        <div class="kpi">Trabalhando agora<strong id="dashWorking">0</strong></div>
+        <div class="kpi">Registros hoje<strong id="dashPunches">0</strong></div>
+        <div class="kpi">Fora da área<strong id="dashOutside">0</strong></div>
+      </div>
+      <h3>Por loja</h3>
+      <div id="storeDash" class="grid3"></div>
+    </section>
+
+    <section id="ponto" class="card hidden">
+      <h2>Registrar ponto</h2>
+      <div class="grid">
+        <div>
+          <label>Tipo</label>
+          <select id="punchType">
+            <option value="entrada">Entrada</option>
+            <option value="saida_intervalo">Saída intervalo</option>
+            <option value="volta_intervalo">Volta intervalo</option>
+            <option value="saida">Saída</option>
+          </select>
+        </div>
+        <div><label>Observação</label><input id="punchNote" placeholder="Opcional"></div>
+      </div>
+      <div class="grid">
+        <div class="card" style="box-shadow:none;border:1px solid #e5e7eb">
+          <h3>Localização para auditoria</h3>
+          <p class="small">O sistema registra a distância da loja, mas não bloqueia o ponto.</p>
+          <button class="btn-blue" onclick="captureLocation()">Capturar localização</button>
+          <div id="geoMsg" class="status hidden"></div>
+        </div>
+        <div class="card" style="box-shadow:none;border:1px solid #e5e7eb">
+          <h3>Selfie opcional</h3>
+          <div class="actions">
+            <button class="btn-dark" onclick="startCamera()">Abrir câmera</button>
+            <button class="btn-blue" onclick="takePhoto()">Tirar selfie</button>
+          </div>
+          <div class="videoBox"><video id="video" autoplay playsinline muted></video></div>
+          <canvas id="canvas" class="hidden"></canvas>
+          <img id="photoPreview" class="hidden" alt="Selfie">
+        </div>
+      </div>
+      <button class="btn-green" style="width:100%" onclick="registerPunch()">Registrar ponto</button>
+      <div id="punchMsg" class="status hidden"></div>
+    </section>
+
+    <section id="meus" class="card hidden">
+      <h2>Meus registros</h2>
+      <button class="btn-blue" onclick="loadMyPunches()">Atualizar</button>
+      <table><thead><tr><th>Data/Hora</th><th>Tipo</th><th>Loja</th><th>Distância</th><th>Obs.</th></tr></thead><tbody id="myPunchesTable"></tbody></table>
+    </section>
+
+    <section id="checklist" class="card hidden">
+      <h2>Checklist operacional</h2>
+      <div class="grid">
+        <div><label>Loja</label><select id="checkStore"></select></div>
+        <div><label>Tipo de checklist</label><select id="checkType"><option value="chegada">Chegada</option><option value="durante_turno">Durante o turno</option><option value="passagem_turno">Passagem de turno</option></select></div>
+      </div>
+      <div id="checkItems"></div>
+      <label>Observações</label><textarea id="checkNotes"></textarea>
+      <button class="btn-green" onclick="saveChecklist()">Salvar checklist</button>
+      <h3>Últimos checklists</h3>
+      <table><thead><tr><th>Data</th><th>Loja</th><th>Tipo</th><th>Funcionário</th><th>Concluído</th></tr></thead><tbody id="checkTable"></tbody></table>
+    </section>
+
+    <section id="ocorrencias" class="card hidden">
+      <h2>Livro de ocorrências</h2>
+      <div class="grid">
+        <div><label>Loja</label><select id="occStore"></select></div>
+        <div><label>Categoria</label><select id="occCategory"><option>Operacional</option><option>Equipamento</option><option>Produto</option><option>Cliente</option><option>Funcionário</option><option>Outro</option></select></div>
+      </div>
+      <label>Ocorrência</label><textarea id="occText" placeholder="Descreva o que aconteceu no turno"></textarea>
+      <button class="btn-green" onclick="saveOccurrence()">Registrar ocorrência</button>
+      <h3>Últimas ocorrências</h3>
+      <table><thead><tr><th>Data</th><th>Loja</th><th>Categoria</th><th>Funcionário</th><th>Ocorrência</th></tr></thead><tbody id="occTable"></tbody></table>
+    </section>
+
+    <section id="relatorios" class="card hidden">
+      <h2>Relatórios de ponto</h2>
+      <div class="grid4">
+        <div><label>Loja</label><select id="filterStore"><option value="">Todas</option></select></div>
+        <div><label>Funcionário</label><select id="filterEmployee"><option value="">Todos</option></select></div>
+        <div><label>Data inicial</label><input id="filterStart" type="date"></div>
+        <div><label>Data final</label><input id="filterEnd" type="date"></div>
+      </div>
+      <div class="actions">
+        <button class="btn-blue" onclick="loadReport()">Buscar</button>
+        <button class="btn-green" onclick="exportCSV()">Exportar CSV</button>
+      </div>
+      <table><thead><tr><th>Data/Hora</th><th>Funcionário</th><th>Loja</th><th>Turno</th><th>Tipo</th><th>Distância</th><th>Status</th><th>Obs.</th></tr></thead><tbody id="reportTable"></tbody></table>
+    </section>
+
+    <section id="funcionarios" class="card hidden">
+      <h2>Funcionários</h2>
+      <div class="grid3">
+        <div><label>Nome</label><input id="empName"></div>
+        <div><label>E-mail</label><input id="empEmail" type="email"></div>
+        <div><label>Senha inicial</label><input id="empPassword" type="password" placeholder="Mínimo 6 caracteres"></div>
+        <div><label>Loja</label><select id="empStore"></select></div>
+        <div><label>Turno</label><select id="empShift"><option>00:00 às 07:00</option><option>07:00 às 19:00</option><option>19:00 às 00:00</option></select></div>
+        <div><label>Cargo</label><input id="empPosition" value="Atendente"></div>
+        <div><label>Perfil</label><select id="empRole"><option value="employee">Funcionário</option><option value="manager">Gerente da loja</option><option value="super_admin">Super Admin</option></select></div>
+        <div><label>Status</label><select id="empActive"><option value="true">Ativo</option><option value="false">Bloqueado</option></select></div>
+      </div>
+      <button class="btn-green" onclick="createUserFromAdmin()">Criar usuário</button>
+      <p class="small">Se a função da Vercel ainda não estiver configurada, crie o usuário manualmente no Supabase e use o SQL de emergência no README.</p>
+      <table><thead><tr><th>Nome</th><th>E-mail</th><th>Loja</th><th>Turno</th><th>Cargo</th><th>Perfil</th><th>Status</th></tr></thead><tbody id="employeesTable"></tbody></table>
+    </section>
+
+    <section id="lojas" class="card hidden">
+      <h2>Lojas</h2>
+      <div class="grid3">
+        <div><label>Nome da loja</label><input id="storeName"></div>
+        <div><label>CEP / referência</label><input id="storeCep" placeholder="Opcional"></div>
+        <div><label>Raio auditoria metros</label><input id="storeRadius" value="150"></div>
+        <div><label>Latitude</label><input id="storeLat" placeholder="Opcional"></div>
+        <div><label>Longitude</label><input id="storeLon" placeholder="Opcional"></div>
+        <div><label>Ativa</label><select id="storeActive"><option value="true">Sim</option><option value="false">Não</option></select></div>
+      </div>
+      <button class="btn-green" onclick="saveStore()">Salvar loja</button>
+      <button class="btn-orange" onclick="seedStores()">Criar lojas padrão</button>
+      <table><thead><tr><th>Nome</th><th>Referência</th><th>Raio</th><th>Coordenadas</th><th>Status</th></tr></thead><tbody id="storesTable"></tbody></table>
+    </section>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

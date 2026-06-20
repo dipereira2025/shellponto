@@ -1,0 +1,9 @@
+{
+  "name": "Shell Café Gestão V4",
+  "short_name": "Shell Café V4",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#d71920",
+  "icons": []
+}
